@@ -1,0 +1,26 @@
+name: bz100-reproducible-build
+
+# Builds the BZ-100 target twice in two directories with the pinned compiler, fails if the outputs
+# differ from each other or from bz100/release-hashes.sha256, and publishes the hashes and images.
+
+on:
+  push:
+    branches: ["bz100/**"]
+  pull_request:
+    branches: ["bz100/**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .bz100-toolchain
+          key: xpack-arm-none-eabi-gcc-10.3.1-2.3
+      - run: bz100/build-repro.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bz100-firmware-${{ github.sha }}
+          path: bz100/out

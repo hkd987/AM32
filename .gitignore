@@ -25,3 +25,7 @@ windows-tools.zip
 .settings/
 /dist/
 /build/
+
+# BZ-100 reproducible build
+.bz100-toolchain/
+bz100/out/
