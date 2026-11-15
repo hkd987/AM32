@@ -542,6 +542,7 @@ uint16_t e_rpm; // electrical revolution /100 so,  123 is 12300 erpm
 uint16_t adjusted_duty_cycle;
 
 uint8_t bad_count = 0;
+uint8_t bemf_opposite_seen = 0; // BZ-100: comparator showed the pre-crossing level since the last commutation
 uint8_t bad_count_threshold = CPU_FREQUENCY_MHZ / 24;
 uint8_t dshotcommand;
 uint16_t armed_count_threshold = 1000;
@@ -867,6 +868,7 @@ void getBemfState()
         if (current_state) {
             bemfcounter++;
         } else {
+            bemf_opposite_seen = 1;
             bad_count++;
             if (bad_count > bad_count_threshold) {
                 bemfcounter = 0;
@@ -876,12 +878,30 @@ void getBemfState()
         if (!current_state) {
             bemfcounter++;
         } else {
+            bemf_opposite_seen = 1;
             bad_count++;
             if (bad_count > bad_count_threshold) {
                 bemfcounter = 0;
             }
         }
     }
+}
+
+/*
+ * BZ-100: reverse-rotation check for the polling (start-up) routine.
+ * When the rotor turns the right way, the back-EMF of the floating phase is on the far side of the comparator
+ * threshold just after a commutation and crosses it about half a sector later, so the comparator shows the
+ * opposite level for a while first (bemf_opposite_seen records that). When the rotor turns backwards the slope is
+ * reversed: the floating phase is already past the threshold when the step changes, the "crossing" is seen on
+ * the first polls, and the drive races through a few steps and times out. In SITL at 6 % throttle that loop
+ * held the rotor turning backwards for the whole start (blue-zone docs/results/sim-charters.md, finding 8).
+ * A crossing that was never preceded by the opposite level since the last commutation is therefore not accepted
+ * in polling mode; the routine keeps waiting, and the back-EMF timeout steps the field forward until the rotor
+ * follows and real crossings appear.
+ */
+static inline uint8_t bemfPrecededByOppositeLevel(void)
+{
+    return bemf_opposite_seen;
 }
 
 void commutate()
@@ -910,6 +930,7 @@ void commutate()
     }
     __enable_irq();
     changeCompInput();
+    bemf_opposite_seen = 0;
 #ifndef NO_POLLING_START
 	if (average_interval > polling_mode_changeover + 500) {
       old_routine = 1;
@@ -1589,12 +1610,12 @@ void tenKhzRoutine()
             getBemfState();
             if (!zcfound) {
                 if (rising) {
-                    if (bemfcounter > min_bemf_counts_up) {
+                    if (bemfcounter > min_bemf_counts_up && bemfPrecededByOppositeLevel()) {
                         zcfound = 1;
                         zcfoundroutine();
                     }
                 } else {
-                    if (bemfcounter > min_bemf_counts_down) {
+                    if (bemfcounter > min_bemf_counts_down && bemfPrecededByOppositeLevel()) {
                         zcfound = 1;
                         zcfoundroutine();
                     }
@@ -2414,12 +2435,12 @@ if(zero_crosses < 5){
                 getBemfState();
                 if (!zcfound) {
                     if (rising) {
-                        if (bemfcounter > min_bemf_counts_up) {
+                        if (bemfcounter > min_bemf_counts_up && bemfPrecededByOppositeLevel()) {
                             zcfound = 1;
                             zcfoundroutine();
                         }
                     } else {
-                        if (bemfcounter > min_bemf_counts_down) {
+                        if (bemfcounter > min_bemf_counts_down && bemfPrecededByOppositeLevel()) {
                             zcfound = 1;
                             zcfoundroutine();
                         }
