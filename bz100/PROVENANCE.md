@@ -8,7 +8,7 @@ in the repository.
 | --- | --- |
 | Upstream | `https://github.com/am32-firmware/AM32` |
 | Upstream release | v2.22, commit `3863f9dfd9132cc0f6d42dce5dede49faa72c8ca` |
-| Change on top of upstream | one target block, `BLUEZONE_100A_L431_CAN`, in `Inc/targets.h` (first commit on `bz100/v2.22`) |
+| Change on top of upstream | one target block, `BLUEZONE_100A_L431_CAN`, in `Inc/targets.h` (first commit on `bz100/v2.22`); on branch `claude/reverse-spin-check`, a start-up reverse-spin check in `Src/main.c` (polling-mode zero crossings must follow the opposite comparator level) |
 | Compiler | xPack GNU Arm Embedded GCC 10.3.1-2.3, archive SHA-256 `559dcf1c2dfddac513110fe23da0ef254032c09967eaa901f075515d51818719` (the compiler AM32's own `make arm_sdk_install` uses) |
 | Build flags | AM32's Makefile unchanged; four path-mapping flags passed through `CC=` so that build paths do not enter the ELF (they do not change the flashable image) |
 | Release hashes | `bz100/release-hashes.sha256` |
