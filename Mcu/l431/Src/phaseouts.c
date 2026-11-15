@@ -8,6 +8,13 @@
 #include "common.h"
 #include "targets.h"
 
+#ifdef BUS_OV_BRAKE_STOP
+extern volatile uint8_t bus_ov_coast; // main.c: bus too high for synchronous rectification
+#define COMP_PWM_ACTIVE (temp_comp_pwm && !bus_ov_coast)
+#else
+#define COMP_PWM_ACTIVE (temp_comp_pwm)
+#endif
+
 extern char prop_brake_active;
 
 #ifndef PWM_ENABLE_BRIDGE
@@ -59,7 +66,7 @@ void proportionalBrake()
 
 void phaseBPWM()
 {
-    if (!temp_comp_pwm) { // for future
+    if (!COMP_PWM_ACTIVE) { // for future
         LL_GPIO_SetPinMode(PHASE_B_GPIO_PORT_LOW, PHASE_B_GPIO_LOW,
             LL_GPIO_MODE_OUTPUT);
         PHASE_B_GPIO_PORT_LOW->LOW_BITREG_OFF = PHASE_B_GPIO_LOW;
@@ -97,7 +104,7 @@ void phaseBLOW()
 
 void phaseCPWM()
 {
-    if (!temp_comp_pwm) {
+    if (!COMP_PWM_ACTIVE) {
         LL_GPIO_SetPinMode(PHASE_C_GPIO_PORT_LOW, PHASE_C_GPIO_LOW,
             LL_GPIO_MODE_OUTPUT);
         PHASE_C_GPIO_PORT_LOW->LOW_BITREG_OFF = PHASE_C_GPIO_LOW;
@@ -135,7 +142,7 @@ void phaseCLOW()
 
 void phaseAPWM()
 {
-    if (!temp_comp_pwm) {
+    if (!COMP_PWM_ACTIVE) {
         LL_GPIO_SetPinMode(PHASE_A_GPIO_PORT_LOW, PHASE_A_GPIO_LOW,
             LL_GPIO_MODE_OUTPUT);
         PHASE_A_GPIO_PORT_LOW->LOW_BITREG_OFF = PHASE_A_GPIO_LOW;
@@ -172,7 +179,7 @@ void phaseALOW()
 //////////////////////////////////PHASE 1//////////////////////
 void phaseBPWM()
 {
-    if (!temp_comp_pwm) { // for future
+    if (!COMP_PWM_ACTIVE) { // for future
                      // LL_GPIO_SetPinMode(PHASE_B_GPIO_PORT_LOW,
                      // PHASE_B_GPIO_LOW, LL_GPIO_MODE_OUTPUT);
                      // PHASE_B_GPIO_PORT_LOW->LOW_BITREG_OFF = PHASE_B_GPIO_LOW;
@@ -211,7 +218,7 @@ void phaseBLOW()
 
 void phaseCPWM()
 {
-    if (!temp_comp_pwm) {
+    if (!COMP_PWM_ACTIVE) {
         //	LL_GPIO_SetPinMode(PHASE_C_GPIO_PORT_LOW, PHASE_C_GPIO_LOW,
         // LL_GPIO_MODE_OUTPUT); PHASE_C_GPIO_PORT_LOW->LOW_BITREG_OFF =
         // PHASE_C_GPIO_LOW;
@@ -250,7 +257,7 @@ void phaseCLOW()
 
 void phaseAPWM()
 {
-    if (!temp_comp_pwm) {
+    if (!COMP_PWM_ACTIVE) {
         //	LL_GPIO_SetPinMode(PHASE_A_GPIO_PORT_LOW, PHASE_A_GPIO_LOW,
         // LL_GPIO_MODE_OUTPUT); PHASE_A_GPIO_PORT_LOW->LOW_BITREG_OFF =
         // PHASE_A_GPIO_LOW;

@@ -333,6 +333,9 @@ char do_once_sinemode = 0;
 uint8_t auto_advance_level;
 volatile uint8_t zero_throttle_brake_active;
 volatile uint8_t temp_comp_pwm;
+#ifdef BUS_OV_BRAKE_STOP
+volatile uint8_t bus_ov_coast = 0; // 1 while the bus is too high for synchronous rectification
+#endif
 uint8_t brake_countdown;
 
 //============================= Servo Settings ==============================
@@ -2343,6 +2346,16 @@ if(zero_crosses < 5){
             battery_voltage = ((7 * battery_voltage) + ((ADC_raw_volts * 3300 / 4095 * VOLTAGE_DIVIDER) / 100)) >> 3;
             smoothed_raw_current = getSmoothedCurrent();
             actual_current = ((smoothed_raw_current * 3300 / 41) - (CURRENT_OFFSET * 100)) / (MILLIVOLT_PER_AMP);
+#endif
+#ifdef BUS_OV_BRAKE_STOP
+            // Braking current pumps the DC link up. Above the limit the low sides stay off during the PWM off-time
+            // (diode freewheeling, the motor coasts), so no current flows back into the bus; the phase output
+            // routines read the flag at the next commutation step.
+            if (battery_voltage > BUS_OV_BRAKE_STOP) {
+                bus_ov_coast = 1;
+            } else if (battery_voltage < BUS_OV_BRAKE_RESUME) {
+                bus_ov_coast = 0;
+            }
 #endif
             if (actual_current < 0) {
                 actual_current = 0;

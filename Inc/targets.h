@@ -283,6 +283,10 @@
 #define RAMP_SPEED_HIGH_RPM 1
 #define USE_SERIAL_TELEMETRY
 #define USE_ALKAS_DEBUG_LED // PA15 status LED pin: push-pull output, held low
+// bus over-voltage: no synchronous rectification (active braking) above 62.00 V, back on below 60.00 V
+// (battery_voltage units of 10 mV). The board's comparator cuts the bridge at 66 V as the backstop.
+#define BUS_OV_BRAKE_STOP 6200
+#define BUS_OV_BRAKE_RESUME 6000
 #endif
 
 #ifdef TBS_12S_L431_CAN
