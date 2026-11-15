@@ -336,6 +336,9 @@ volatile uint8_t temp_comp_pwm;
 #ifdef BUS_OV_BRAKE_STOP
 volatile uint8_t bus_ov_coast = 0; // 1 while the bus is too high for synchronous rectification
 #endif
+#ifdef BUS_OV_CUT_PIN
+volatile uint8_t bus_ov_cut = 0; // latched when the board's over-voltage cut trips
+#endif
 uint8_t brake_countdown;
 
 //============================= Servo Settings ==============================
@@ -1542,6 +1545,16 @@ if (!stepper_sine && armed) {
 
 void tenKhzRoutine()
 { // 20khz as of 2.00 to be renamed
+#ifdef BUS_OV_CUT_PIN
+    // The board's over-voltage cut has tripped (its flag is stretched to at least 0.5 ms, so a 50 us poll
+    // cannot miss it): stop synchronous rectification now and latch it until the flag is low and the bus is
+    // below BUS_OV_BRAKE_RESUME (cleared in the ADC block).
+    if (BUS_OV_CUT_PORT->IDR & BUS_OV_CUT_PIN) {
+        bus_ov_coast = 1; // set first, so a commutation step that interrupts below already coasts
+        bus_ov_cut = 1;
+        busOvLowSidesOff();
+    }
+#endif
     duty_cycle = duty_cycle_setpoint;
     tenkhzcounter++;
     ledcounter++;
@@ -2351,9 +2364,18 @@ if(zero_crosses < 5){
             // Braking current pumps the DC link up. Above the limit the low sides stay off during the PWM off-time
             // (diode freewheeling, the motor coasts), so no current flows back into the bus; the phase output
             // routines read the flag at the next commutation step.
+#ifdef BUS_OV_CUT_PIN
+            // a cut trip stays latched until its flag is low and the bus has come back down
+            if (bus_ov_cut && !(BUS_OV_CUT_PORT->IDR & BUS_OV_CUT_PIN) && battery_voltage < BUS_OV_BRAKE_RESUME) {
+                bus_ov_cut = 0;
+            }
+#define BUS_OV_CUT_LATCHED bus_ov_cut
+#else
+#define BUS_OV_CUT_LATCHED 0
+#endif
             if (battery_voltage > BUS_OV_BRAKE_STOP) {
                 bus_ov_coast = 1;
-            } else if (battery_voltage < BUS_OV_BRAKE_RESUME) {
+            } else if (battery_voltage < BUS_OV_BRAKE_RESUME && !BUS_OV_CUT_LATCHED) {
                 bus_ov_coast = 0;
             }
 #endif

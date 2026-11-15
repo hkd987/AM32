@@ -37,12 +37,39 @@ extern char prop_brake_active;
 #define HIGH_BITREG_OFF BRR
 #endif
 
+#ifdef BUS_OV_BRAKE_STOP
+// Bus too high: switch every low side that is running complementary PWM (synchronous rectification) to a plain
+// output held off, now rather than at the next commutation step. A low side held on as the commutation step's
+// low leg is left alone (it carries drive current, not braking current). The output is written off before the
+// mode changes, so the pin cannot glitch on.
+static void lowSideCompOff(GPIO_TypeDef* port, uint32_t pin)
+{
+    if (LL_GPIO_GetPinMode(port, pin) == LL_GPIO_MODE_ALTERNATE) {
+        port->LOW_BITREG_OFF = pin;
+        LL_GPIO_SetPinMode(port, pin, LL_GPIO_MODE_OUTPUT);
+    }
+}
+
+void busOvLowSidesOff()
+{
+    lowSideCompOff(PHASE_A_GPIO_PORT_LOW, PHASE_A_GPIO_LOW);
+    lowSideCompOff(PHASE_B_GPIO_PORT_LOW, PHASE_B_GPIO_LOW);
+    lowSideCompOff(PHASE_C_GPIO_PORT_LOW, PHASE_C_GPIO_LOW);
+}
+#endif
+
 void proportionalBrake()
 { // alternate all channels between braking (ABC LOW)
     // and coasting (ABC float) put lower channel into
     // alternate mode and turn upper OFF for each
     // channel
     // turn all HIGH channels off for ABC
+#ifdef BUS_OV_BRAKE_STOP
+    if (bus_ov_coast) { // braking would pump the bus: coast instead
+        allOff();
+        return;
+    }
+#endif
 
     LL_GPIO_SetPinMode(PHASE_A_GPIO_PORT_HIGH, PHASE_A_GPIO_HIGH,
         LL_GPIO_MODE_OUTPUT);

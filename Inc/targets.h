@@ -287,6 +287,11 @@
 // (battery_voltage units of 10 mV). The board's comparator cuts the bridge at 66 V as the backstop.
 #define BUS_OV_BRAKE_STOP 6200
 #define BUS_OV_BRAKE_RESUME 6000
+// rev C: the over-voltage cut's flag (OV_FW, stretched to at least 0.5 ms after release) on PB5, high while
+// tripped. On a trip the firmware stops synchronous rectification at once and keeps it off until the flag is low
+// and the bus is below BUS_OV_BRAKE_RESUME.
+#define BUS_OV_CUT_PORT GPIOB
+#define BUS_OV_CUT_PIN LL_GPIO_PIN_5
 #endif
 
 #ifdef TBS_12S_L431_CAN

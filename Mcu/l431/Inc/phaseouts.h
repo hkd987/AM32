@@ -18,5 +18,8 @@ void allpwm();
 void proportionalBrake();
 void twoChannelForward();
 void twoChannelReverse();
+#ifdef BUS_OV_BRAKE_STOP
+void busOvLowSidesOff();
+#endif
 
 #endif /* INC_PHASEOUTS_H_ */

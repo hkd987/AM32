@@ -532,6 +532,14 @@ void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #endif
+#ifdef BUS_OV_CUT_PIN
+    // over-voltage cut flag: plain input, no pull (the board's 270k to ground sets the 0.5 ms stretch)
+    LL_GPIO_InitTypeDef ov_cut_init = { 0 };
+    ov_cut_init.Pin = BUS_OV_CUT_PIN;
+    ov_cut_init.Mode = LL_GPIO_MODE_INPUT;
+    ov_cut_init.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(BUS_OV_CUT_PORT, &ov_cut_init);
+#endif
 }
 
 void UN_TIM_Init(void)
